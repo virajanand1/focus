@@ -23,10 +23,10 @@ def load_calibration_data():
 
 # run calibration process: capture webcam video, detect face and head pose, calculate average neutral yaw and pitch angles, return them as a dictionary
 def run_calibration():
-    cap = cv2.VideoCapture(0)
+    cap = cv2.VideoCapture(0) # open default webcam
     _, frame = cap.read()
-    h, w = frame.shape[:2]
-    cam_mat = build_camera_matrix(w, h)
+    h, w = frame.shape[:2] 
+    cam_mat = build_camera_matrix(w, h) # build camera matrix using a frame
 
     with mp.solutions.face_mesh.FaceMesh(
         max_num_faces=1,
