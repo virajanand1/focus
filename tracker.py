@@ -18,11 +18,18 @@ class FocusTracker:
         
         raw_status = "LOOKING_AWAY" if raw_status == "NO_FACE" else raw_status
 
-        if raw_status != self._state:
+        if raw_status != self._pending_state:
             self._pending_state = raw_status
             self._pending_since = time.time()
 
         elif raw_status == self._state:
+            self._pending_state = None
+            self._pending_since = None
+
+        if time.time() - self._pending_since > GRACE_PERIOD:
+            self._state = self._pending_state
+            if self._state == "LOOKING_AWAY":
+                self.distracted_count += 1
             self._pending_state = None
             self._pending_since = None
 
