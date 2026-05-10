@@ -1,0 +1,12 @@
+# Python
+__pycache__/
+*.pyc
+
+# Calibration/database
+data/calibration.json
+
+# MediaPipe model file
+face_landmarker.task
+
+#Mac
+.DS_Store

@@ -1,6 +1,8 @@
 import cv2
 import mediapipe as mp
 import numpy as np
+from mediapipe.tasks import python
+from mediapipe.tasks.python.vision import FaceLandmarker, FaceLandmarkerOptions, RunningMode
 
 FACE_3D = np.array([
     [0.0,    0.0,    0.0],    # nose tip
@@ -16,6 +18,16 @@ FACE_2D = [1,152,33,263,61,291] #mediapipe face landmarks for the above 3D point
 YAW_MAX = 20
 PITCH_MAX = 20
 
+MODEL_PATH = "face_landmarker.task"
+
+def build_landmarker():
+    options = FaceLandmarkerOptions(
+        base_options=python.BaseOptions(model_asset_path=MODEL_PATH),
+        running_mode=RunningMode.IMAGE,
+        num_faces = 1,
+    )
+    return FaceLandmarker.create_from_options(options)
+
 def build_camera_matrix(w, h):
     f = float(w)
     return np.array([
@@ -25,8 +37,7 @@ def build_camera_matrix(w, h):
     ], dtype=np.float64)
 
 def get_head_angles(face_landmarks, w, h, cam_mat):
-    lm = face_landmarks.landmark #list of 478 detected points on the face (with x,y,z)
-    face_2d = np.array([[lm[i].x * w, lm[i].y * h] for i in FACE_2D], #multiply landmarks by width and height to get pixel coordinates
+    face_2d = np.array([[face_landmarks[i].x * w, face_landmarks[i].y * h] for i in FACE_2D], #multiply landmarks by width and height to get pixel coordinates
                        dtype=np.float64)
     
     dist = np.zeros((4, 1), dtype=np.float64) #assume no lens distortion
@@ -43,8 +54,12 @@ def get_head_angles(face_landmarks, w, h, cam_mat):
     return angles[0], angles[1]   # pitch, yaw
 
 def classify(pitch, yaw, neutral_pitch, neutral_yaw):
-    if abs(yaw - neutral_yaw > YAW_MAX):
+    if (yaw - neutral_yaw) > YAW_MAX:        # turned right
         return "LOOKING_AWAY"
-    if abs(pitch - neutral_pitch > PITCH_MAX):
+    if (yaw - neutral_yaw) < -YAW_MAX:       # turned left
+        return "LOOKING_AWAY"
+    if pitch - neutral_pitch > PITCH_MAX:    # looking down
+        return "LOOKING_AWAY"
+    if pitch - neutral_pitch < -PITCH_MAX:  # looking up
         return "LOOKING_AWAY"
     return "FOCUSED"
